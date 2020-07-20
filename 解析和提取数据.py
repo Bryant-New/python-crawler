@@ -19,5 +19,4 @@ for item in items:
     brief = item.find(class_='info') 
     # 打印提取出的数据
     print(kind.text, '\n', title.text, '\n', brief.text)
-    # 打印提取出的数据类型
     
