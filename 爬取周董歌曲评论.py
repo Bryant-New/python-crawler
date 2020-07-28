@@ -3,7 +3,15 @@ import requests
 from bs4 import BeautifulSoup
 
 # 为躲避反爬机制，伪装成浏览器的请求头
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'}
+headers = {
+    'origin': 'https://y.qq.com',
+    # 请求来源，本案例中其实是不需要加这个参数的，只是为了演示
+    'referer': 'https://y.qq.com/n/yqq/song/004Z8Ihr0JIu5s.html',
+    # 请求来源，携带的信息比“origin”更丰富，本案例中其实是不需要加这个参数的，只是为了演示
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36',
+    # 标记了请求从什么设备，什么浏览器上发出,直接在浏览器中查看网页源代码中查看Request Header中复制User-agent，将Python爬虫伪装成浏览器浏览，Header头中只需修改User-agent参数
+}
+# 伪装请求头
 # 循环5次，重复加载并获取
 for i in range(5):
     # QQ音乐中对应的周杰伦网址，Network中评论对应的RequestsURL，由字典和列表嵌套形成的XHR数据，格式为.json
