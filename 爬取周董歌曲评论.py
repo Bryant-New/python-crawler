@@ -48,7 +48,7 @@ for i in range(5):
     res_comments = requests.get(url, headers=headers, params=params)
     # 使用json方法，将resopons对象-XHR，转为正常的列表/字典
     # 将参数封装为字典
-    res_music = requests.get(url,params=params)
+    res_music = requests.get(url, params=params)
     # 调用get方法，下载这个字典
     json_music = res_music.json()
     # 使用json()方法，将response对象，转为列表/字典
