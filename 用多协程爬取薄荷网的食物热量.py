@@ -21,8 +21,8 @@
 
 from gevent import monkey
 monkey.patch_all()
-# 让程序变成异步模式
-import gevent,requests, bs4, csv
+# 让程序变成异步模式-多协程
+import gevent, requests, bs4, csv
 from gevent.queue import Queue
 # 导入所需模块，并根据前面分析得出的网址规律，
 # 用for循环构造出前3个常见食物类别的前3页食物记录的网址和
@@ -30,16 +30,66 @@ from gevent.queue import Queue
 
 # 创建队列对象,并赋值给work
 work = Queue()
-# 前三个常见食物分类的前三页的食物记录网址：
+# 通过两个for循环，构造了前3个常见食物分类的前3页的食物记录的网址。
 url_1 = 'https://www.boohee.com/food/group/{type}?page={page}'
 # 通过两个for循环，设置分类的数字和页数的数字
 # 把构造好的网址用put_nowait方法添加进队列中
 for x in range(1, 4):
     for y in range(1, 4):
         real_url = url_1.format(type=x, page=y)
+        # 格式化字符串
         work.put_nowait(real_url)
 
 print(work)
+# 一共打印出了12个网址，分别是【谷薯芋、杂豆、主食】前3页食物记录的网址、
+# 【蛋类、肉类及制品】前3页食物记录的网址、【奶类及制品】前3页食物记录的网址和最后一个常见食物分类【菜肴】前3页食物记录的网址。
 
 
+# 定义一个爬虫函数
+def crawler():
+    headers = {
+        'user-agent': 'Mozilla/5.0 '
+                      '(Windows NT 10.0; Win64; x64) '
+                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
+    }
+    while not work.empty():
+    # 当队列不是空的时候，就执行下面的程序
+        # 用get_nowait()方法从队列里把刚刚放入的网址提取出来
+        url = work.get_nowait()
+        # 用requests.get获取网页源代码
+        res = requests.get(url, headers=headers)
+        # 用BeautifulSoup解析网页源代码
+        bs_res = bs4.BeautifulSoup(res.text, 'html.parser')
+        # 用find_all提取出<li class="item clearfix">li标签,class属性的内容
+        foods = bs_res.find_all('li', class_='item clearfix')
+        for food in foods:
+        # 遍历foods
+            # 用find_all在<li class="item clearfix">标签下，提取出第2个<a>元素title属性的值，也就是食物名称。
+            food_name = food.find_all('a')[1]['title']
+            # 用find_all在<li class="item clearfix">元素下，提取出第2个<a>元素href属性的值，跟'http://www.boohee.com'组合在一起，
+            # 就是食物详情页的链接
+            food_url = 'http://www.boohee.com' + food.find_all('a')[1]['href']
+            # 用find在<li class="item clearfix">标签下，提取<p>元素，再用text方法留下纯文本，也提取出了食物的热量。
+            # 食物热量在<p>元素里，我们用find提取就可以
+            food_calorie = food.find('p').text
+            # 打印食物名称
+            # 食物详情链接和名称在<li class="item clearfix">标签的第2个<a>元素里，
+            # gevent.spawn()创建任务和用gevent.joinall()执行任务
+            print(food_name)
 
+# 调用open()函数打开csv文件，传入参数：文件名“boohee.csv”、写入模式“w”、newline=''。
+csv_file = open('boohee.csv', 'w', newline='')
+# 用csv.writer()函数创建一个writer对象
+writer = csv.writer(csv_file)
+# 借助writerow()函数往csv文件里写入文字：食物、热量、链接
+writer.writerow(['食物', '热量', '链接'])
+# 创建空的任务列表
+tasks_list = []
+for x in range(5):
+# 相当于创建了5个爬虫
+    # 用gevent.spawn()函数创建并执行crawler函数的任务
+    task = gevent.spawn(crawler)
+    # 往任务列表添加任务
+    tasks_list.append(task)
+# 用gevent.joinall方法，启动协程，执行任务列表里的所有任务，让爬虫开始爬取网站。
+gevent.joinall(tasks_list)
